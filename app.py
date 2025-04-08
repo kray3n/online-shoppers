@@ -4,29 +4,35 @@ import tensorflow as tf
 from tensorflow import keras
 from flask import Flask, request, jsonify
 
-# Încarcă modelul Keras
 model = keras.models.load_model("my_model.h5")
 
 app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "Hello from my ML API!"
+    return "Shopper prediciton!"
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    data = request.json  # primește datele JSON
-    # aici extragi feature-urile, creezi vector numeric
-    input_vector = np.array([[data.get("Administrative", 0),
-                              data.get("Administrative_Duration", 0),
-                              data.get("Informational", 0),
-                              ... ]])  # complet cu restul feature-urilor
+    data = request.json
+    
+    input_order = ["Administrative", "Administrative_Duration", "Informational",
+                   "Informational_Duration", "ProductRelated", "ProductRelated_Duration",
+                   "BounceRates", "ExitRates", "PageValues", "SpecialDay", "Weekend"
+                  ]
+    x_input = []
+    for col in input_order:
+        x_input.append(data.get(col, 0))
 
-    # model.predict -> prob
-    prob = model.predict(input_vector)[0][0]
-    pred = 1 if prob >= 0.5 else 0
+    x_input = np.array([x_input], dtype=float)
 
-    return jsonify({"probability": float(prob), "prediction": pred})
+    prob = model.predict(x_input)[0][0]
+    prediction = 1 if prob >= 0.5 else 0
+
+    return jsonify({
+        "probability": float(prob),
+        "prediction": int(prediction)
+    })
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
